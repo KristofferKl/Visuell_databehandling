@@ -60,6 +60,14 @@ unsafe fn create_vao(vertices: &Vec<f32>, indices: &Vec<u32>) -> u32 {
 
     // This should:
     // * Generate a VAO and bind it
+        let mut vao_id:u32 =0;
+    gl::GenVertexArrays(1, &mut vao_id);
+    gl::BindVertexArray(vao_id);
+
+    // * Generate a VBO and bind it
+    let mut vbo_id:u32=0;
+    gl::GenBuffers(1, &mut vbo_id);
+    gl::BindBuffer(gl::ARRAY_BUFFER, vbo_id);
     // * Generate a VBO and bind it
     // * Fill it with data
     // * Configure a VAP for the data and enable it
