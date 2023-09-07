@@ -1,12 +1,12 @@
 // Uncomment these following global attributes to silence most warnings of "low" interest:
-/*
+
 #![allow(dead_code)]
 #![allow(non_snake_case)]
 #![allow(unreachable_code)]
 #![allow(unused_mut)]
 #![allow(unused_unsafe)]
 #![allow(unused_variables)]
-*/
+
 extern crate nalgebra_glm as glm;
 use std::{ mem, ptr, os::raw::c_void };
 use std::thread;
@@ -60,7 +60,7 @@ unsafe fn create_vao(vertices: &Vec<f32>, indices: &Vec<u32>) -> u32 {
 
     // This should:
     // * Generate a VAO and bind it
-        let mut vao_id:u32 =0;
+    let mut vao_id:u32 =0;
     gl::GenVertexArrays(1, &mut vao_id);
     gl::BindVertexArray(vao_id);
 
@@ -68,14 +68,39 @@ unsafe fn create_vao(vertices: &Vec<f32>, indices: &Vec<u32>) -> u32 {
     let mut vbo_id:u32=0;
     gl::GenBuffers(1, &mut vbo_id);
     gl::BindBuffer(gl::ARRAY_BUFFER, vbo_id);
-    // * Generate a VBO and bind it
     // * Fill it with data
+    gl::BufferData(
+        gl::ARRAY_BUFFER, 
+        byte_size_of_array(&vertices) as isize, //ind or vert?
+        vertices.as_ptr().cast(),      //might not point correctly (ind or vert?)
+        gl::STATIC_DRAW
+    );
     // * Configure a VAP for the data and enable it
+    gl::VertexAttribPointer(
+        0, // 0 or add u32?
+        3,
+        gl::FLOAT,  //should match data type from buffer data
+        gl::FALSE,
+        0,
+        std::ptr::null()
+    );
+    gl::EnableVertexAttribArray(0);
     // * Generate a IBO and bind it
-    // * Fill it with data
-    // * Return the ID of the VAO
+    let mut ibo_id:u32=0;
+    gl::GenBuffers(1, &mut ibo_id);
+    gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, ibo_id);
+    gl::BufferData(
+        gl::ELEMENT_ARRAY_BUFFER,
+        byte_size_of_array(&indices),
+        indices.as_ptr().cast(),
+        gl::STATIC_DRAW
+    );
 
-    0
+    // * Fill it with data
+
+
+    // * Return the ID of the VAO
+    return vao_id;
 }
 
 
@@ -140,10 +165,51 @@ fn main() {
 
         // == // Set up your VAO around here
 
-        let my_vao = unsafe { 1337 };
+        let num_tre: i32= 5;
+        let count_tri: i32 = num_tre*3;
+        
+        let vertices: Vec<f32> = vec!
+        [-0.6, 0.4, 0.0,
+         -0.4, 0.4, 0.0,
+         -0.5, 0.6, 0.0,
+
+         -0.3, 0.4, 0.0,
+         -0.1, 0.4, 0.0,
+         -0.2, 0.6, 0.0,
+
+         -0.6, 0.1, 0.0,
+         -0.4, 0.1, 0.0,
+         -0.5, 0.3, 0.0,
+
+         -0.3, 0.1, 0.0,
+         -0.1, 0.1, 0.0,
+         -0.2, 0.3, 0.0,
+
+         -0.3, -0.2, 0.0,
+         -0.1, -0.2, 0.0,
+         -0.2, 0.0, 0.0
+
+        ];
+        
+        let indices: Vec<u32> = vec!
+        [0, 1, 2,
+        3, 4, 5,
+        6, 7, 8,
+        9, 10,11,
+        12, 13, 14];
+        
+        let my_vao = unsafe { 
+            create_vao(&vertices, &indices)
+        };
 
 
         // == // Set up your shaders here
+        let shader = unsafe {
+            shader::ShaderBuilder::new()
+                .attach_file("./shaders/simple.frag")
+                .attach_file("./shaders/simple.vert")
+                .link()
+        };
 
         // Basic usage of shader helper:
         // The example code below creates a 'shader' object.
@@ -151,6 +217,15 @@ fn main() {
         // The `.` in the path is relative to `Cargo.toml`.
         // This snippet is not enough to do the exercise, and will need to be modified (outside
         // of just using the correct path), but it only needs to be called once
+        //unsafe{
+        //    shader.activate()
+        //    }
+///////
+        //unsafe{
+        //gl::BindVertexArray(my_vao) 
+        //}
+///////
+
 
         /*
         let simple_shader = unsafe {
@@ -220,11 +295,19 @@ fn main() {
 
             unsafe {
                 // Clear the color and depth buffers
-                gl::ClearColor(0.035, 0.046, 0.078, 1.0); // night sky, full opacity
+                gl::ClearColor(1.0, 0.046, 0.078, 1.0); // night sky, full opacity
                 gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
 
 
                 // == // Issue the necessary gl:: commands to draw your scene here
+                gl::DrawElements(
+                    gl::TRIANGLES,
+                    count_tri,
+                    gl::UNSIGNED_INT,
+                    std::ptr::null()
+
+                );
+
 
 
 
