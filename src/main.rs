@@ -53,28 +53,26 @@ fn offset<T>(n: u32) -> *const c_void {
 
 
 // == // Generate your VAO here
-unsafe fn create_vao(vertices: &Vec<f32>, indices: &Vec<u32>) -> u32 {
-    // Implement me!
-
-    // Also, feel free to delete comments :)
+unsafe fn create_vao(vertices: &Vec<f32>, indices: &Vec<u32>, color: &Vec<f32>) -> u32 {
 
     // This should:
-    // * Generate a VAO and bind it
+    // * Generate a VAO (vertex array object) and bind it
     let mut vao_id:u32 =0;
     gl::GenVertexArrays(1, &mut vao_id);
     gl::BindVertexArray(vao_id);
 
-    // * Generate a VBO and bind it
+    // * Generate a VBO (Vertex buffer object) and bind it
     let mut vbo_id:u32=0;
     gl::GenBuffers(1, &mut vbo_id);
     gl::BindBuffer(gl::ARRAY_BUFFER, vbo_id);
     // * Fill it with data
     gl::BufferData(
         gl::ARRAY_BUFFER, 
-        byte_size_of_array(&vertices) as isize, //ind or vert?
-        vertices.as_ptr().cast(),      //might not point correctly (ind or vert?)
+        byte_size_of_array(&vertices) as isize, // vert?
+        vertices.as_ptr().cast(),     
         gl::STATIC_DRAW
     );
+
     // * Configure a VAP for the data and enable it
     gl::VertexAttribPointer(
         0, // 0 or add u32?
@@ -85,10 +83,12 @@ unsafe fn create_vao(vertices: &Vec<f32>, indices: &Vec<u32>) -> u32 {
         std::ptr::null()
     );
     gl::EnableVertexAttribArray(0);
+
     // * Generate a IBO and bind it
     let mut ibo_id:u32=0;
     gl::GenBuffers(1, &mut ibo_id);
     gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, ibo_id);
+    //* fill IBO with data
     gl::BufferData(
         gl::ELEMENT_ARRAY_BUFFER,
         byte_size_of_array(&indices),
@@ -96,7 +96,29 @@ unsafe fn create_vao(vertices: &Vec<f32>, indices: &Vec<u32>) -> u32 {
         gl::STATIC_DRAW
     );
 
-    // * Fill it with data
+    //Color Generate, bind and fill with data
+    let mut color_id:u32=0;
+    gl::GenBuffers(1, &mut color_id);
+    gl::BindBuffer(gl::ARRAY_BUFFER, color_id);
+    gl::BufferData(
+        gl::ARRAY_BUFFER,
+        byte_size_of_array(&color),
+        color.as_ptr().cast(),
+        gl::STATIC_DRAW
+    );
+
+    gl::VertexAttribPointer(
+        1,
+        4,
+        gl::FLOAT,
+        gl::FALSE,
+        0,
+        std::ptr::null()
+    );
+    gl::EnableVertexAttribArray(1);
+
+
+
 
 
     // * Return the ID of the VAO
@@ -200,14 +222,36 @@ fn main() {
         
         
         let indices: Vec<u32> = vec!
-        [0, 4, 2,
-        3, 1, 5,
+        [0, 1, 2,
+        3, 4, 5,
         6, 7, 8,
         9, 10,11,
         12, 13, 14];
+
+        let color: Vec<f32> = vec![
+            0.1, 0.4, 0.3, 1.0,
+            0.1, 0.4, 0.3, 1.0,
+            0.1, 0.4, 0.3, 1.0,
+
+            1.0, 0.1, 1.0, 1.0,
+            1.0, 0.1, 1.0, 1.0,
+            1.0, 0.1, 1.0, 1.0,
+
+            0.0, 0.8, 0.8, 1.0,
+            0.0, 0.8, 0.8, 1.0,
+            0.0, 0.8, 0.8, 1.0,
+
+            0.9, 0.9, 0.0, 1.0,
+            0.9, 0.9, 0.0, 1.0,
+            0.9, 0.9, 0.0, 1.0,
+
+            1.0, 0.0, 0.0, 1.0,
+            0.0, 1.0, 0.0, 1.0,
+            0.0, 0.0, 1.0, 1.0
+        ];
         
         let my_vao = unsafe { 
-            create_vao(&vertices, &indices)
+            create_vao(&vertices, &indices, &color)
         };
 
 
@@ -225,9 +269,7 @@ fn main() {
         // The `.` in the path is relative to `Cargo.toml`.
         // This snippet is not enough to do the exercise, and will need to be modified (outside
         // of just using the correct path), but it only needs to be called once
-        //unsafe{
-        //    shader.activate()
-        //    }
+
 ///////
         //unsafe{
         //gl::BindVertexArray(my_vao) 
@@ -305,7 +347,7 @@ fn main() {
                 // Clear the color and depth buffers
                 gl::ClearColor(1.0, 0.046, 0.078, 1.0); // night sky, full opacity
                 gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
-
+                shader.activate();
 
                 // == // Issue the necessary gl:: commands to draw your scene here
                 gl::DrawElements(
