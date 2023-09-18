@@ -121,6 +121,8 @@ unsafe fn create_vao(vertices: &Vec<f32>, indices: &Vec<u32>, color: &Vec<f32>) 
 
 
 
+
+
     // * Return the ID of the VAO
     return vao_id;
 }
@@ -189,6 +191,8 @@ fn main() {
 
         let num_tre: i32= 3;
         let count_tri: i32 = num_tre*3;
+            
+
         
         let vertices: Vec<f32> = vec!
         /* 
@@ -197,17 +201,17 @@ fn main() {
         -0.8, -0.2, 1.2];
         */
         [
-         -0.6, 0.0, -0.5,
-         0.0, 0.0, -0.5,
-         -0.3, 0.6, -0.5,
+         -0.6, 0.0, 0.5,
+         0.0, 0.0, 0.5,
+         -0.3, 0.6, 0.5,
 
-         -0.4, 0.0, 0.5,
-         0.2, 0.0, 0.5,
-         -0.1, 0.6, 0.5,
+         -0.4, 0.0, -0.5,
+         0.2, 0.0, -0.5,
+         -0.1, 0.6, -0.5,
 
-         -0.5, -0.1, 0.9,
-         0.1, -0.1, 0.9,
-         -0.2, 0.5, 0.9
+         -0.5, -0.1, -0.9,
+         0.1, -0.1, -0.9,
+         -0.2, 0.5, -0.9
             
         ];
         
@@ -338,6 +342,8 @@ fn main() {
             let delta_time = now.duration_since(previous_frame_time).as_secs_f32();
             previous_frame_time = now;
 
+
+
             // Handle resize events
             if let Ok(mut new_size) = window_size.lock() {
                 if new_size.2 {
@@ -383,6 +389,17 @@ fn main() {
             }
 
             // == // Please compute camera transforms here (exercise 2 & 3)
+
+            //adding the uniform variable going between -1 and 1 to pass into the vertex shader
+            unsafe{
+
+                let s= elapsed.sin();
+                let c = elapsed.cos();
+                //gl::GetUniformLocation(program, name)
+                // let uni_loc = gl::GetUniformLocation(shader.program_id, );
+                gl::UseProgram(shader.program_id);
+                gl::Uniform2f(3,s, c);
+                }
 
 
             unsafe {

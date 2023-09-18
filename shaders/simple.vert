@@ -5,11 +5,22 @@ in vec4 color;
 
 out vec4 vert_color;
 
+//now it takes bot sin (s) and cosine (c)
+layout(location = 3) uniform vec2 sc;
+float s=sc[0];
+float c= sc[1];
+mat4 ATM = mat4(
+vec4(c, -s, 0.0, 0.0),
+vec4(s, c, 0.0, 0.0),
+vec4(0.0, 0.0, 1.0, 0.0),
+vec4(0.0, 0.0, 0.0, 1.0));
+
+
+
 
 
 void main()
 {
-    
-    gl_Position = vec4(position, 1.0f);
+    gl_Position = vec4(position, 1.0f)*ATM;
     vert_color = color;
 }
