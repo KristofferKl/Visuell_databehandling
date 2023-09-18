@@ -290,6 +290,17 @@ fn main() {
                 .link()
         };
 
+
+        // // !!!!!!!!!!!!!!!  AFFINE MATRIX TRANSFORMATIONS !!!!!!!!
+            //denne skal inn i shaderen, usikker på metoden fortsatt.
+        // mat4x4 AffineTM = {{1.0 0.0, 0.0, 0.0},{0.0, 1.0, 0.0, 0.0},{0.0, 0.0, 1.0, 0.0},{0.0, 0.0, 0.0, 1.0}};
+
+
+
+        // //choosing which transformation matrix to send to the Shader:
+
+        // let AffineTM = M;
+
         // Basic usage of shader helper:
         // The example code below creates a 'shader' object.
         // It which contains the field `.program_id` and the method `.activate()`.
