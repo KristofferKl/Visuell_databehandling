@@ -96,7 +96,7 @@ unsafe fn create_vao(vertices: &Vec<f32>, indices: &Vec<u32>, color: &Vec<f32>) 
         gl::STATIC_DRAW
     );
 
-    //Color Generate, bind and fill with data
+    //Color Generate, bind and fill with data, VBO for color
     let mut color_id:u32=0;
     gl::GenBuffers(1, &mut color_id);
     gl::BindBuffer(gl::ARRAY_BUFFER, color_id);
@@ -137,7 +137,7 @@ fn main() {
         .with_vsync(true);
     let windowed_context = cb.build_windowed(wb, &el).unwrap();
     // Uncomment these if you want to use the mouse for controls, but want it to be confined to the screen and/or invisible.
-    // windowed_context.window().set_cursor_grab(true).expect("failed to grab cursor");
+    // windowed_context.window().set_cursor_grab(true).expect("BLENDfailed to grab cursor");
     // windowed_context.window().set_cursor_visible(false);
 
     // Set up a shared vector for keeping track of currently pressed keys
@@ -187,7 +187,7 @@ fn main() {
 
         // == // Set up your VAO around here
 
-        let num_tre: i32= 5;
+        let num_tre: i32= 3;
         let count_tri: i32 = num_tre*3;
         
         let vertices: Vec<f32> = vec!
@@ -196,8 +196,22 @@ fn main() {
         0.0, 0.4, 0.0,
         -0.8, -0.2, 1.2];
         */
+        [
+         -0.6, 0.0, -0.5,
+         0.0, 0.0, -0.5,
+         -0.3, 0.6, -0.5,
+
+         -0.4, 0.0, 0.5,
+         0.2, 0.0, 0.5,
+         -0.1, 0.6, 0.5,
+
+         -0.5, -0.1, 0.9,
+         0.1, -0.1, 0.9,
+         -0.2, 0.5, 0.9
+            
+        ];
         
-        
+        /*
         [-0.6, 0.4, 0.0,
          -0.4, 0.4, 0.0,
          -0.5, 0.6, 0.0,
@@ -219,7 +233,7 @@ fn main() {
          -0.2, 0.0, 0.0
 
         ];
-        
+        */
         
         let indices: Vec<u32> = vec!
         [0, 1, 2,
@@ -229,25 +243,38 @@ fn main() {
         12, 13, 14];
 
         let color: Vec<f32> = vec![
-            0.1, 0.4, 0.3, 1.0,
-            0.1, 0.4, 0.3, 1.0,
-            0.1, 0.4, 0.3, 1.0,
+            0.0, 0.0, 1.0, 0.4,
+            0.0, 0.0, 1.0, 0.4,
+            0.0, 0.0, 1.0, 0.4,
 
-            1.0, 0.1, 1.0, 1.0,
-            1.0, 0.1, 1.0, 1.0,
-            1.0, 0.1, 1.0, 1.0,
+            1.0, 0.0, 0.0, 0.6,
+            1.0, 0.0, 0.0, 0.6,
+            1.0, 0.0, 0.0, 0.6,
 
-            0.0, 0.8, 0.8, 1.0,
-            0.0, 0.8, 0.8, 1.0,
-            0.0, 0.8, 0.8, 1.0,
+            0.0, 1.0, 0.0, 0.5,
+            0.0, 1.0, 0.0, 0.5,
+            0.0, 1.0, 0.0, 0.5
 
-            0.9, 0.9, 0.0, 1.0,
-            0.9, 0.9, 0.0, 1.0,
-            0.9, 0.9, 0.0, 1.0,
+            // 0.0, 0.4, 0.3, 1.0,
+            // 0.1, 0.4, 1.0, 1.0,
+            // 0.1, 0.0, 0.1, 1.0,
 
-            1.0, 0.0, 0.0, 1.0,
-            0.0, 1.0, 0.0, 1.0,
-            0.0, 0.0, 1.0, 1.0
+            // 1.0, 0.0, 0.0, 1.0,
+            // 0.5, 1.0, 0.0, 1.0,
+            // 0.0, 0.0, 1.0, 1.0,
+
+            // 0.9, 0.0, 0.8, 1.0,
+            // 0.0, 0.8, 0.8, 1.0,
+            // 0.9, 0.8, 0.0, 1.0
+            // //,
+
+            // 0.4, 0.0, 0.1, 1.0,
+            // 0.9, 0.9, 0.0, 1.0,
+            // 0.0, 0.5, 0.6, 1.0,
+
+            // 1.0, 0.0, 0.0, 1.0,
+            // 0.0, 1.0, 0.0, 1.0,
+            // 0.0, 0.0, 1.0, 1.0
         ];
         
         let my_vao = unsafe { 
@@ -303,9 +330,13 @@ fn main() {
             // Handle resize events
             if let Ok(mut new_size) = window_size.lock() {
                 if new_size.2 {
-                    context.resize(glutin::dpi::PhysicalSize::new(new_size.0, new_size.1));
-                    window_aspect_ratio = new_size.0 as f32 / new_size.1 as f32;
-                    (*new_size).2 = false;
+                    // 0.4, 0.0, 0.1, 1.0,
+                    // 0.9, 0.9, 0.0, 1.0,
+                    // 0.0, 0.5, 0.6, 1.0,
+        
+                    // 1.0, 0.0, 0.0, 1.0,
+                    // 0.0, 1.0, 0.0, 1.0,
+                    // 0.0, 0.0, 1.0, 1.0
                     println!("Window was resized to {}x{}", new_size.0, new_size.1);
                     unsafe { gl::Viewport(0, 0, new_size.0 as i32, new_size.1 as i32); }
                 }
@@ -345,7 +376,7 @@ fn main() {
 
             unsafe {
                 // Clear the color and depth buffers
-                gl::ClearColor(1.0, 0.046, 0.078, 1.0); // night sky, full opacity
+                gl::ClearColor(0.035, 0.046, 0.078, 1.0); // night sky, full opacity
                 gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
                 shader.activate();
 
