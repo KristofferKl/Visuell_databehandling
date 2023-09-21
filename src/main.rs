@@ -350,6 +350,10 @@ fn main() {
         let trans_speed: f32 = 3.0;
         let rot_speed: f32 = 1.0;
 
+        let mut xVec: glm::Vec4 = glm::vec4(1.0, 0.0, 0.0, 0.0);
+        let mut yVec: glm::Vec4 = glm::vec4(0.0, 1.0, 0.0, 0.0);
+        let mut zVec: glm::Vec4 = glm::vec4(0.0, 0.0, 1.0, 0.0);
+
 
 
 
@@ -494,6 +498,24 @@ fn main() {
 
 
 
+            // // movement axis:
+            // let xVec: glm::Vec3 = glm::vec3(x1, 0.0, 0.0);
+            // let yVec: glm::Vec3 = glm::vec3(0.0, y1, 0.0);
+            // let zVec: glm::Vec3 = glm::vec3(0.0, 0.0, z1);
+            let rot_y:glm::Mat4= glm::rotation(roty_val,&glm::vec3(0.0, 1.0, 0.0));
+            let rot_x:glm::Mat4= glm::rotation(rotx_val,&glm::vec3(1.0, 0.0, 0.0));
+
+            //this is for attempting to fix the translation axies.
+            // xVec = rot_y * rot_x * xVec;
+            // yVec = rot_y * rot_x * yVec;
+
+            // let mut xVec3: glm::Vec3 = xVec;
+            // let yVec3: glm::Vec3 = yVec;
+
+
+            // glm::translation(&xVec3 * transx_val)
+
+
 
 
 
@@ -504,8 +526,8 @@ fn main() {
             let mut trans: glm::Mat4= glm::identity(); //final computed matrix
             trans = glm::translation(&glm::vec3(0.0, 0.0, -2.0)) * trans;
             trans = glm::translation(&glm::vec3(transx_val, transy_val, transz_val)) * trans;
-            trans = glm::rotation(roty_val,&glm::vec3(0.0, 1.0, 0.0)) * trans;
-            trans = glm::rotation(rotx_val,&glm::vec3(1.0, 0.0, 0.0)) * trans;
+            trans = rot_y * trans;
+            trans = rot_x * trans;
 
             //this must always be last!
             trans = projection *trans;
