@@ -15,10 +15,13 @@ use std::sync::{Mutex, Arc, RwLock};
 mod shader;
 mod util;
 mod mesh;
+mod scene_graph;
 
-use glm::{Vec3, vec4};
+use glm::{Vec3, vec4, vec3, Mat4};
 use glutin::event::{Event, WindowEvent, DeviceEvent, KeyboardInput, ElementState::{Pressed, Released}, VirtualKeyCode::{self, *}};
 use glutin::event_loop::ControlFlow;
+use mesh::Helicopter;
+use scene_graph::SceneNode;
 
 // initial window size
 const INITIAL_SCREEN_W: u32 = 800;
@@ -113,11 +116,37 @@ unsafe fn create_vao(vertices: &Vec<f32>, indices: &Vec<u32>, color: &Vec<f32>, 
         1,
         4,
         gl::FLOAT,
-        gl::TRUE, // setter normalised til true
+        gl::FALSE, // setter normalised, skal kanskje være true
         0,
         std::ptr::null()
     );
+
     gl::EnableVertexAttribArray(1);
+
+
+    // normals:
+    let mut normals_id:u32=0;
+    gl::GenBuffers(1, &mut normals_id);
+    gl::BindBuffer(gl::ARRAY_BUFFER, normals_id);
+    gl::BufferData(
+        gl::ARRAY_BUFFER,
+        byte_size_of_array(&normal),
+        normal.as_ptr().cast(),
+        gl::STATIC_DRAW
+    );
+    //println!("normals_id\t: {:?}",&normal);
+
+    gl::VertexAttribPointer(
+        2,
+        3,
+        gl::FLOAT,
+        gl::FALSE, // setter normalised til true
+        0,
+        std::ptr::null()
+    );
+
+
+    gl::EnableVertexAttribArray(2);
 
 
 
@@ -130,9 +159,60 @@ unsafe fn create_vao(vertices: &Vec<f32>, indices: &Vec<u32>, color: &Vec<f32>, 
 }
 
 
+// draw scene ---------------------------------------------------------------
+unsafe fn draw_scene(
 
+    node: &scene_graph::SceneNode,
+    view_projection_matrix: &glm::Mat4,
+    transformation_so_far: &glm::Mat4) {
+    // Perform any logic needed before drawing the node
+    //the translations and rotations are not yet foolproof, might have done it wrong, the angle is probably way off
+    //translate
+    let mut transformation = glm::translation(&(-node.reference_point)) * transformation_so_far;
+
+    //rotate glm::rotation(roty_val,&glm::vec3(0.0, 1.0, 0.0));
+    //let mut angle = node.rotation/abs(node.rotation)
+
+    transformation = glm::rotation(45.0,&node.rotation) * transformation; //rotates if there is a defined matrix (hopefully)
+
+    //scale?
+
+
+    //translate back 
+    transformation= glm::translation(&node.reference_point) * transformation;
+
+
+    // Check if node is drawable, if so: set uniforms, bind VAO and draw VAO
+    if node.index_count != -1{ // this might be 2 or three
+
+        //uniforms:
+
+        unsafe{
+            // sending the matrix to vertex shader
+            //gl::UseProgram(shader.program_id);
+            gl::UniformMatrix4fv(10, 1,0, view_projection_matrix.as_ptr());
+        }
+
+        //bind and draw VAO
+        gl::BindVertexArray(node.vao_id);
+        gl::DrawElements(
+        gl::TRIANGLES,
+        node.index_count,
+        gl::UNSIGNED_INT,
+        std::ptr::null()
+        );
+    }
+    // Recurse
+    for &child in &node.children {
+    draw_scene(&*child, view_projection_matrix, &transformation);
+    }
+    }
+
+
+// ----------------------------------------------------------------------------------------
 
 fn main() {
+    
     // Set up the necessary objects to deal with windows and event handling
     let el = glutin::event_loop::EventLoop::new();
     let wb = glutin::window::WindowBuilder::new()
@@ -296,9 +376,9 @@ fn main() {
         let normal: Vec<f32> = vec![
 
         ];
-        let my_vao = unsafe { 
-            create_vao(&vertices, &indices, &color, &normal)
-        };
+        // let my_vao = unsafe { 
+        //     create_vao(&vertices, &indices, &color, &normal)
+        // };
 
 
         // == // Set up your shaders here
@@ -312,7 +392,51 @@ fn main() {
         let terrain= mesh::Terrain::load("./resources/lunarsurface.obj");
         
 
-        let my_terrain = unsafe{ create_vao(&terrain.vertices, &terrain.indices, &terrain.colors, &terrain.normals) };
+        let my_terrain = unsafe{ 
+            create_vao(
+                &terrain.vertices,
+                &terrain.indices,
+                &terrain.colors,
+                &terrain.normals) 
+        };
+
+        // load helicopter
+        let helicopter = mesh::Helicopter::load("./resources/helicopter.obj");
+        let heli_body = helicopter.body;
+        let heli_door = helicopter.door;
+        let heli_m_rotor = helicopter.main_rotor;
+        let heli_t_rotor = helicopter.tail_rotor;
+
+        let my_heli_body = unsafe{
+            create_vao(
+                &heli_body.vertices, 
+                &heli_body.indices, 
+                &heli_body.colors,
+                &heli_body.normals)
+        };
+
+        let my_heli_door = unsafe{
+            create_vao(
+                &heli_door.vertices, 
+                &heli_door.indices, 
+                &heli_door.colors,
+                &heli_door.normals)
+        };
+
+        let my_heli_m_rotor = unsafe{
+            create_vao(
+                &heli_m_rotor.vertices, 
+                &heli_m_rotor.indices, 
+                &heli_m_rotor.colors,
+                &heli_m_rotor.normals)
+        };
+        let my_heli_t_rotor = unsafe{
+            create_vao(
+                &heli_t_rotor.vertices, 
+                &heli_t_rotor.indices, 
+                &heli_t_rotor.colors,
+                &heli_t_rotor.normals)
+        };
 
 
         // // !!!!!!!!!!!!!!!  AFFINE MATRIX TRANSFORMATIONS !!!!!!!!
@@ -355,8 +479,8 @@ fn main() {
         let mut transz_val: f32 = 0.0;
         let mut rotx_val: f32 =0.0;
         let mut roty_val: f32 =0.0;
-
-        let trans_speed: f32 = 3.0;
+        
+        let trans_speed: f32 = 20.0;
         let rot_speed: f32 = 1.0;
 
         let mut xVec: glm::Vec4 = glm::vec4(1.0, 0.0, 0.0, 0.0);
@@ -411,17 +535,17 @@ fn main() {
                             transx_val -= delta_time*trans_speed;
                         }
 
-                        VirtualKeyCode::S => {
+                        VirtualKeyCode::LShift => {
                             transy_val += delta_time*trans_speed;
                         }
-                        VirtualKeyCode::W => {
+                        VirtualKeyCode::Space => {
                             transy_val -= delta_time*trans_speed;
                         }
 
-                        VirtualKeyCode::Space => {
+                        VirtualKeyCode::W => {
                             transz_val += delta_time*trans_speed;
                         }
-                        VirtualKeyCode::LShift => {
+                        VirtualKeyCode::S => {
                             transz_val -= delta_time*trans_speed;
                         }
 
@@ -511,8 +635,6 @@ fn main() {
             // let xVec: glm::Vec3 = glm::vec3(x1, 0.0, 0.0);
             // let yVec: glm::Vec3 = glm::vec3(0.0, y1, 0.0);
             // let zVec: glm::Vec3 = glm::vec3(0.0, 0.0, z1);
-            let rot_y:glm::Mat4= glm::rotation(roty_val,&glm::vec3(0.0, 1.0, 0.0));
-            let rot_x:glm::Mat4= glm::rotation(rotx_val,&glm::vec3(1.0, 0.0, 0.0));
 
             //this is for attempting to fix the translation axies.
             // xVec = rot_y * rot_x * xVec;
@@ -530,6 +652,8 @@ fn main() {
 
 
         //  // matrix multiplications goes here:
+        let rot_y:glm::Mat4= glm::rotation(roty_val,&glm::vec3(0.0, 1.0, 0.0));
+        let rot_x:glm::Mat4= glm::rotation(rotx_val,&glm::vec3(1.0, 0.0, 0.0));
 
 
             let mut trans: glm::Mat4= glm::identity(); //final computed matrix
@@ -542,11 +666,11 @@ fn main() {
             trans = projection *trans;
 
 
-            unsafe{
-                // sending the matrix to vertex shader
-                gl::UseProgram(shader.program_id);
-                gl::UniformMatrix4fv(3, 1,0, trans.as_ptr());
-            }
+            // unsafe{
+            //     // sending the matrix to vertex shader
+            //     gl::UseProgram(shader.program_id);
+            //     gl::UniformMatrix4fv(10, 1,0, trans.as_ptr());
+            // }
 
 //end of my code
 
@@ -555,21 +679,78 @@ fn main() {
                 gl::ClearColor(0.035, 0.046, 0.078, 1.0); // night sky, full opacity
                 gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
                 shader.activate();
+                // //     terrain.index_count,
+                // //     gl::UNSIGNED_INT,
+                // //     std::ptr::null()
 
-                // == // Issue the necessary gl:: commands to draw your scene here
-                gl::BindVertexArray(my_terrain);
-                gl::DrawElements(
-                    gl::TRIANGLES,
-                    terrain.index_count,
-                    gl::UNSIGNED_INT,
-                    std::ptr::null()
+                // // );
 
-                );
+                // gl::BindVertexArray(my_heli_body);
+                // // gl::DrawElements(
+                // //     gl::TRIANGLES,
+                // //     heli_body.index_count,
+                // //     gl::UNSIGNED_INT,
+                // //     std::ptr::null()
 
+                // // );
 
+                // gl::BindVertexArray(my_heli_door);
+                // // gl::DrawElements(
+                // //     gl::TRIANGLES,
+                // //     heli_door.index_count,
+                // //     gl::UNSIGNED_INT,
+                // //     std::ptr::null()
 
+                // // );
+
+                // gl::BindVertexArray(my_heli_m_rotor);
+                // // gl::DrawElements(
+                // //     gl::TRIANGLES,
+                // //     heli_m_rotor.index_count,
+                // //     gl::UNSIGNED_INT,
+                // //     std::ptr::null()
+
+                // // );
+                // gl::BindVertexArray(my_heli_t_rotor);
+                // // gl::DrawElements(
+                //     // gl::TRIANGLES,
+                //     // heli_t_rotor.index_count,
+                //     // gl::UNSIGNED_INT,
+                //     // std::ptr::null()
+
+                // // );
+
+            
 
             }
+            let mut root_node = SceneNode::new();
+            let mut scene_node = SceneNode::from_vao(my_terrain, terrain.index_count);
+            root_node.add_child(&scene_node);
+
+            let mut heli_bod_node = SceneNode::from_vao(my_heli_body, heli_body.index_count);
+            scene_node.add_child(&heli_bod_node);
+
+            let mut heli_door_node = SceneNode::from_vao(my_heli_door, heli_door.index_count);
+            heli_bod_node.add_child(&heli_door_node);
+
+            let mut heli_m_rot_node = SceneNode::from_vao(my_heli_m_rotor, heli_m_rotor.index_count);
+            heli_bod_node.add_child(&heli_m_rot_node);
+
+            let mut heli_t_rot_node = SceneNode::from_vao(my_heli_t_rotor, heli_t_rotor.index_count);
+            heli_t_rot_node.reference_point= glm::vec3(0.35, 2.3, 10.4);
+            heli_t_rot_node.rotation= glm::vec3(0.0, 1.0, 0.0);
+            
+            heli_bod_node.add_child(&heli_t_rot_node);
+
+            // heli_bod_node.print();
+            // heli_door_node.print();
+            // heli_m_rot_node.print();
+            // heli_t_rot_node.print();
+            unsafe{
+
+            draw_scene(&root_node,&trans, &glm::Mat4::identity());
+            }
+
 
             // Display the new color buffer on the display
             context.swap_buffers().unwrap(); // we use "double buffering" to avoid artifacts
