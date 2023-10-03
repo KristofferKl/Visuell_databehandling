@@ -14,6 +14,7 @@ use std::sync::{Mutex, Arc, RwLock};
 
 mod shader;
 mod util;
+mod mesh;
 
 use glm::{Vec3, vec4};
 use glutin::event::{Event, WindowEvent, DeviceEvent, KeyboardInput, ElementState::{Pressed, Released}, VirtualKeyCode::{self, *}};
@@ -54,7 +55,7 @@ fn offset<T>(n: u32) -> *const c_void {
 
 
 // == // Generate your VAO here
-unsafe fn create_vao(vertices: &Vec<f32>, indices: &Vec<u32>, color: &Vec<f32>) -> u32 {
+unsafe fn create_vao(vertices: &Vec<f32>, indices: &Vec<u32>, color: &Vec<f32>, normal: &Vec<f32>) -> u32 {
 
     // This should:
     // * Generate a VAO (vertex array object) and bind it
@@ -112,7 +113,7 @@ unsafe fn create_vao(vertices: &Vec<f32>, indices: &Vec<u32>, color: &Vec<f32>) 
         1,
         4,
         gl::FLOAT,
-        gl::FALSE,
+        gl::TRUE, // setter normalised til true
         0,
         std::ptr::null()
     );
@@ -292,8 +293,11 @@ fn main() {
             // 0.0, 0.0, 1.0, 1.0
         ];
         
+        let normal: Vec<f32> = vec![
+
+        ];
         let my_vao = unsafe { 
-            create_vao(&vertices, &indices, &color)
+            create_vao(&vertices, &indices, &color, &normal)
         };
 
 
@@ -304,6 +308,11 @@ fn main() {
                 .attach_file("./shaders/simple.vert")
                 .link()
         };
+        // load terrain
+        let terrain= mesh::Terrain::load("./resources/lunarsurface.obj");
+        
+
+        let my_terrain = unsafe{ create_vao(&terrain.vertices, &terrain.indices, &terrain.colors, &terrain.normals) };
 
 
         // // !!!!!!!!!!!!!!!  AFFINE MATRIX TRANSFORMATIONS !!!!!!!!
@@ -494,7 +503,7 @@ fn main() {
             // == // Please compute camera transforms here (exercise 2 & 3)
             //dealarations
             //projection deaclaration
-            let projection: glm::Mat4 = glm::perspective(window_aspect_ratio, 90.0, 1.0, 100.0);
+            let projection: glm::Mat4 = glm::perspective(window_aspect_ratio, 90.0, 1.0, 1000.0); // increased far to 1000
 
 
 
@@ -548,9 +557,10 @@ fn main() {
                 shader.activate();
 
                 // == // Issue the necessary gl:: commands to draw your scene here
+                gl::BindVertexArray(my_terrain);
                 gl::DrawElements(
                     gl::TRIANGLES,
-                    count_tri,
+                    terrain.index_count,
                     gl::UNSIGNED_INT,
                     std::ptr::null()
 
