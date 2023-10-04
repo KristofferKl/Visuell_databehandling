@@ -185,8 +185,8 @@ unsafe fn draw_scene(
 
     //let mut view_projection_matrix_2: glm::Mat4 = transformation * (*view_projection_matrix);
     //add to transformation so far:
-    let _ =transformation * transformation_so_far;
-    let mut view_projection_matrix_2: glm::Mat4 = *view_projection_matrix;
+    let model_matrix: glm::Mat4 =transformation_so_far * transformation;
+    let MVP: glm::Mat4 = model_matrix * view_projection_matrix;
 
     //view_projection_matrix= &transformation * view_projection_matrix;
 
@@ -198,7 +198,7 @@ unsafe fn draw_scene(
         unsafe{
             // sending the matrix to vertex shader
             //gl::UseProgram(shader.program_id);
-            gl::UniformMatrix4fv(10, 1,0, view_projection_matrix_2.as_ptr());
+            gl::UniformMatrix4fv(10, 1,0, MVP.as_ptr());
         }
 
         //bind and draw VAO
