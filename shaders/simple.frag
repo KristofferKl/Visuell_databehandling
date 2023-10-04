@@ -10,6 +10,7 @@ vec3 lightDirection = normalize(vec3(0.8, -0.5, 0.6));
 void main()
 {
     
-    color = vert_color*vec4(max(vec3(0.0, 0.0, 0.0), vert_normal*(-lightDirection)), 1.0f);
+    vec4 tempcolor = vert_color*max(0.0, dot(vert_normal, -lightDirection));
+    color = vec4(tempcolor.x, tempcolor.y, tempcolor.z, 1.0f);
     
 }

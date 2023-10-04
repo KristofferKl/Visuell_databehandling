@@ -167,20 +167,28 @@ unsafe fn draw_scene(
     transformation_so_far: &glm::Mat4) {
     // Perform any logic needed before drawing the node
     //the translations and rotations are not yet foolproof, might have done it wrong, the angle is probably way off
+    
+    let mut transformation: glm::Mat4 = glm::identity();
     //translate
-    let mut transformation = glm::translation(&(-node.reference_point)) * transformation_so_far;
+    transformation= glm::translation(&(-node.reference_point)) * transformation;
 
     //rotate glm::rotation(roty_val,&glm::vec3(0.0, 1.0, 0.0));
     //let mut angle = node.rotation/abs(node.rotation)
-
-    transformation = glm::rotation(45.0,&node.rotation) * transformation; //rotates if there is a defined matrix (hopefully)
-
+    
+    transformation = glm::rotation(node.rotation.x,&glm::vec3(1.0, 0.0, 0.0)) * transformation; //rotates if there is a defined matrix (hopefully)
+    transformation = glm::rotation(node.rotation.y,&glm::vec3(0.0, 1.0, 0.0)) * transformation;
+    transformation = glm::rotation(node.rotation.z,&glm::vec3(0.0, 0.0, 1.0)) * transformation;
     //scale?
 
-
     //translate back 
-    transformation= glm::translation(&node.reference_point) * transformation;
+    transformation= &glm::translation(&node.reference_point) * &transformation;
 
+    //let mut view_projection_matrix_2: glm::Mat4 = transformation * (*view_projection_matrix);
+    //add to transformation so far:
+    let _ =transformation * transformation_so_far;
+    let mut view_projection_matrix_2: glm::Mat4 = *view_projection_matrix;
+
+    //view_projection_matrix= &transformation * view_projection_matrix;
 
     // Check if node is drawable, if so: set uniforms, bind VAO and draw VAO
     if node.index_count != -1{ // this might be 2 or three
@@ -190,7 +198,7 @@ unsafe fn draw_scene(
         unsafe{
             // sending the matrix to vertex shader
             //gl::UseProgram(shader.program_id);
-            gl::UniformMatrix4fv(10, 1,0, view_projection_matrix.as_ptr());
+            gl::UniformMatrix4fv(10, 1,0, view_projection_matrix_2.as_ptr());
         }
 
         //bind and draw VAO
@@ -204,7 +212,7 @@ unsafe fn draw_scene(
     }
     // Recurse
     for &child in &node.children {
-    draw_scene(&*child, view_projection_matrix, &transformation);
+    draw_scene(&*child, view_projection_matrix, transformation_so_far);
     }
     }
 
