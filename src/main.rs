@@ -16,12 +16,14 @@ mod shader;
 mod util;
 mod mesh;
 mod scene_graph;
+mod toolbox;
 
 use glm::{Vec3, vec4, vec3, Mat4};
 use glutin::event::{Event, WindowEvent, DeviceEvent, KeyboardInput, ElementState::{Pressed, Released}, VirtualKeyCode::{self, *}};
 use glutin::event_loop::ControlFlow;
 use mesh::Helicopter;
 use scene_graph::SceneNode;
+use toolbox::Heading;
 
 // initial window size
 const INITIAL_SCREEN_W: u32 = 800;
@@ -170,25 +172,28 @@ unsafe fn draw_scene(
     
     let mut transformation: glm::Mat4 = glm::identity();
     //translate
-    transformation= glm::translation(&(-node.reference_point)) * transformation;
+    //node.reference_point = transformation_so_far.dot(node.reference_point);
 
-    //rotate glm::rotation(roty_val,&glm::vec3(0.0, 1.0, 0.0));
-    //let mut angle = node.rotation/abs(node.rotation)
+    transformation=  transformation * glm::translation(&(node.reference_point));
+
     
-    transformation = glm::rotation(node.rotation.x,&glm::vec3(1.0, 0.0, 0.0)) * transformation; //rotates if there is a defined matrix (hopefully)
-    transformation = glm::rotation(node.rotation.y,&glm::vec3(0.0, 1.0, 0.0)) * transformation;
-    transformation = glm::rotation(node.rotation.z,&glm::vec3(0.0, 0.0, 1.0)) * transformation;
+    transformation = transformation * glm::rotation(node.rotation.z,&glm::vec3(0.0, 0.0, 1.0));
+    transformation = transformation * glm::rotation(node.rotation.y,&glm::vec3(0.0, 1.0, 0.0));
+    transformation = transformation * glm::rotation(node.rotation.x,&glm::vec3(1.0, 0.0, 0.0)); //rotates if there is a defined matrix (hopefully)
     //scale?
 
     //translate back 
-    transformation= &glm::translation(&node.reference_point) * &transformation;
+    transformation= transformation * glm::translation(&(-node.reference_point));
 
-    //let mut view_projection_matrix_2: glm::Mat4 = transformation * (*view_projection_matrix);
+    //let mut holder = transformation * vec4 (node.reference_point.x, node.reference_point.y,node.reference_point.z,1.0);
+    //transformation_so_far = vec3()
+
+
     //add to transformation so far:
-    let model_matrix: glm::Mat4 =transformation_so_far * transformation;
-    let MVP: glm::Mat4 = model_matrix * view_projection_matrix;
+    let model_matrix: glm::Mat4 = transformation_so_far * transformation;
+    // let MVP: glm::Mat4 =  view_projection_matrix * model_matrix; //redundant
+    //let _ = transformation_so_far * model_matrix;
 
-    //view_projection_matrix= &transformation * view_projection_matrix;
 
     // Check if node is drawable, if so: set uniforms, bind VAO and draw VAO
     if node.index_count != -1{ // this might be 2 or three
@@ -198,7 +203,8 @@ unsafe fn draw_scene(
         unsafe{
             // sending the matrix to vertex shader
             //gl::UseProgram(shader.program_id);
-            gl::UniformMatrix4fv(10, 1,0, MVP.as_ptr());
+            gl::UniformMatrix4fv(10, 1,0, model_matrix.as_ptr());
+            gl::UniformMatrix4fv(26, 1, 0, view_projection_matrix.as_ptr());
         }
 
         //bind and draw VAO
@@ -212,7 +218,7 @@ unsafe fn draw_scene(
     }
     // Recurse
     for &child in &node.children {
-    draw_scene(&*child, view_projection_matrix, transformation_so_far);
+    draw_scene(&*child, view_projection_matrix, &model_matrix);
     }
     }
 
@@ -408,12 +414,16 @@ fn main() {
                 &terrain.normals) 
         };
 
-        // load helicopter
+        // load helicopters
+
+
+
         let helicopter = mesh::Helicopter::load("./resources/helicopter.obj");
         let heli_body = helicopter.body;
         let heli_door = helicopter.door;
         let heli_m_rotor = helicopter.main_rotor;
         let heli_t_rotor = helicopter.tail_rotor;
+
 
         let my_heli_body = unsafe{
             create_vao(
@@ -681,6 +691,13 @@ fn main() {
             // }
 
 //end of my code
+            let rps_tail = 2.0;
+            let rot_scale_tail = rps_tail *2.0*3.14;
+            let mut rotation_tail = rot_scale_tail* elapsed;
+
+            let rps_main = 1.0;
+            let rot_scale_main = rps_main *2.0*3.14;
+            let mut rotation_main = elapsed* rot_scale_main;
 
             unsafe {
                 // Clear the color and depth buffers
@@ -729,24 +746,41 @@ fn main() {
                 // // );
 
             
-
+            
             }
+            //load heading
+            //        let terrain= mesh::Terrain::load("./resources/lunarsurface.obj");
+            //let heading = toolbox::simple_heading_animation::load("./src/toolbox.rs");
+            let mut heading = toolbox::simple_heading_animation(elapsed);
+
+
+
+            let world_pos: Vec3= vec3(trans[(3, 0)], trans[(3,1)], trans[(3,2)]);
             let mut root_node = SceneNode::new();
             let mut scene_node = SceneNode::from_vao(my_terrain, terrain.index_count);
             root_node.add_child(&scene_node);
+            //root_node.reference_point = -world_pos;
 
             let mut heli_bod_node = SceneNode::from_vao(my_heli_body, heli_body.index_count);
             scene_node.add_child(&heli_bod_node);
+            heli_bod_node.reference_point = vec3(heading.x, 0.0, heading.z);
+            heli_bod_node.rotation = vec3(heading.roll, heading.yaw, heading.pitch);
+            
+
 
             let mut heli_door_node = SceneNode::from_vao(my_heli_door, heli_door.index_count);
             heli_bod_node.add_child(&heli_door_node);
+            heli_door_node.reference_point = vec3(0.0, 0.0, 0.0);
+            //heli_door_node.rotation= glm::vec3(0.0, rotation_tail, 0.0);
 
             let mut heli_m_rot_node = SceneNode::from_vao(my_heli_m_rotor, heli_m_rotor.index_count);
             heli_bod_node.add_child(&heli_m_rot_node);
+            heli_m_rot_node.reference_point= glm::vec3(0.0, 2.3, 0.0);
+            heli_m_rot_node.rotation= glm::vec3(0.0, rotation_main, 0.0);
 
             let mut heli_t_rot_node = SceneNode::from_vao(my_heli_t_rotor, heli_t_rotor.index_count);
             heli_t_rot_node.reference_point= glm::vec3(0.35, 2.3, 10.4);
-            heli_t_rot_node.rotation= glm::vec3(0.0, 1.0, 0.0);
+            heli_t_rot_node.rotation= glm::vec3(rotation_tail, 0.0, 0.0);
             
             heli_bod_node.add_child(&heli_t_rot_node);
 
