@@ -11,10 +11,7 @@ layout(location= 10) uniform mat4 model_mat;
 layout(location= 26) uniform mat4 view_mat;
 mat4 MVP = view_mat * model_mat;
 
-// mat3 3model = mat3( model_mat[(0,0)], model_mat[(0,1)], model_mat[(0,2)],
-//                     model_mat[(1,0)], model_mat[(1,1)], model_mat[(1,2)],
-//                     model_mat[(2,0)], model_mat[(2,1)], model_mat[(2,2)]
-//                     );
+
 mat3 model_mat3 = mat3(model_mat);
 vec3 normal_new = model_mat3 * normal;
 vec3 normal_new_norm = normalize(normal_new);

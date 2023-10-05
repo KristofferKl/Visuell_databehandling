@@ -174,16 +174,17 @@ unsafe fn draw_scene(
     //translate
     //node.reference_point = transformation_so_far.dot(node.reference_point);
 
-    transformation=  transformation * glm::translation(&(node.reference_point));
-
-    
-    transformation = transformation * glm::rotation(node.rotation.z,&glm::vec3(0.0, 0.0, 1.0));
-    transformation = transformation * glm::rotation(node.rotation.y,&glm::vec3(0.0, 1.0, 0.0));
-    transformation = transformation * glm::rotation(node.rotation.x,&glm::vec3(1.0, 0.0, 0.0)); //rotates if there is a defined matrix (hopefully)
+    transformation =  glm::translation(&(-node.reference_point)) * transformation;
+    //rotates if there is a defined matrix (hopefully)
+    transformation = glm::rotation(node.rotation.z,&glm::vec3(0.0, 0.0, 1.0)) * transformation;
+    transformation = glm::rotation(node.rotation.y,&glm::vec3(0.0, 1.0, 0.0)) * transformation;
+    transformation = glm::rotation(node.rotation.x,&glm::vec3(1.0, 0.0, 0.0)) * transformation; 
     //scale?
-
+    
     //translate back 
-    transformation= transformation * glm::translation(&(-node.reference_point));
+    transformation =  glm::translation(&(node.reference_point)) * transformation;
+
+    transformation =  glm::translation(&(node.position)) * transformation;
 
     //let mut holder = transformation * vec4 (node.reference_point.x, node.reference_point.y,node.reference_point.z,1.0);
     //transformation_so_far = vec3()
@@ -793,7 +794,7 @@ fn main() {
             // heli_m_rot_node.print();
             // heli_t_rot_node.print();
             ///////
-            let offset = 0.4;
+            let offset = 3.2;
             let mut nodes: Vec<scene_graph::Node> = Vec::new();
             //nodes[0] = scene_node;
 
@@ -802,8 +803,10 @@ fn main() {
                 //heli body
                 nodes.push(SceneNode::from_vao(my_heli_body, heli_body.index_count)); 
                 scene_node.add_child(&nodes[i]);
-                nodes[i].reference_point = vec3(heading.x, 0.0, heading.z);
-                nodes[i].rotation = vec3(heading.roll, heading.yaw, heading.pitch);
+                nodes[i].position = vec3(heading.x, 20.0, heading.z);
+                
+                //nodes[i].rotation = vec3(heading.roll, heading.yaw, heading.pitch);
+                nodes[i].rotation = vec3(heading.pitch, heading.yaw, heading.roll);
                 //Heli door
                 nodes[i].add_child(&SceneNode::from_vao(my_heli_door, heli_door.index_count)); 
                 nodes[i].get_child(0).reference_point = vec3(0.0, 0.0, 0.0);
