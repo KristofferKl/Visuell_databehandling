@@ -690,7 +690,6 @@ fn main() {
             //     gl::UniformMatrix4fv(10, 1,0, trans.as_ptr());
             // }
 
-//end of my code
             let rps_tail = 2.0;
             let rot_scale_tail = rps_tail *2.0*3.14;
             let mut rotation_tail = rot_scale_tail* elapsed;
@@ -751,43 +750,80 @@ fn main() {
             //load heading
             //        let terrain= mesh::Terrain::load("./resources/lunarsurface.obj");
             //let heading = toolbox::simple_heading_animation::load("./src/toolbox.rs");
-            let mut heading = toolbox::simple_heading_animation(elapsed);
+            let offset = 1.1;
+
+            // let mut heading = toolbox::simple_heading_animation(elapsed+offset); //this should also be in the loop
 
 
 
-            let world_pos: Vec3= vec3(trans[(3, 0)], trans[(3,1)], trans[(3,2)]);
+            //let world_pos: Vec3= vec3(trans[(3, 0)], trans[(3,1)], trans[(3,2)]);
             let mut root_node = SceneNode::new();
             let mut scene_node = SceneNode::from_vao(my_terrain, terrain.index_count);
             root_node.add_child(&scene_node);
             //root_node.reference_point = -world_pos;
 
-            let mut heli_bod_node = SceneNode::from_vao(my_heli_body, heli_body.index_count);
-            scene_node.add_child(&heli_bod_node);
-            heli_bod_node.reference_point = vec3(heading.x, 0.0, heading.z);
-            heli_bod_node.rotation = vec3(heading.roll, heading.yaw, heading.pitch);
+            //etter dette skal alt forhåpentlgvis funbgere via loopen::
+
+            // let mut heli_bod_node = SceneNode::from_vao(my_heli_body, heli_body.index_count);
+            // scene_node.add_child(&heli_bod_node);
+            // heli_bod_node.reference_point = vec3(heading.x, 0.0, heading.z);
+            // heli_bod_node.rotation = vec3(heading.roll, heading.yaw, heading.pitch);
             
 
 
-            let mut heli_door_node = SceneNode::from_vao(my_heli_door, heli_door.index_count);
-            heli_bod_node.add_child(&heli_door_node);
-            heli_door_node.reference_point = vec3(0.0, 0.0, 0.0);
-            //heli_door_node.rotation= glm::vec3(0.0, rotation_tail, 0.0);
+            // let mut heli_door_node = SceneNode::from_vao(my_heli_door, heli_door.index_count);
+            // heli_bod_node.add_child(&heli_door_node);
+            // heli_door_node.reference_point = vec3(0.0, 0.0, 0.0);
+            // //heli_door_node.rotation= glm::vec3(0.0, rotation_tail, 0.0);
 
-            let mut heli_m_rot_node = SceneNode::from_vao(my_heli_m_rotor, heli_m_rotor.index_count);
-            heli_bod_node.add_child(&heli_m_rot_node);
-            heli_m_rot_node.reference_point= glm::vec3(0.0, 2.3, 0.0);
-            heli_m_rot_node.rotation= glm::vec3(0.0, rotation_main, 0.0);
+            // let mut heli_m_rot_node = SceneNode::from_vao(my_heli_m_rotor, heli_m_rotor.index_count);
+            // heli_bod_node.add_child(&heli_m_rot_node);
+            // heli_m_rot_node.reference_point= glm::vec3(0.0, 2.3, 0.0);
+            // heli_m_rot_node.rotation= glm::vec3(0.0, rotation_main, 0.0);
 
-            let mut heli_t_rot_node = SceneNode::from_vao(my_heli_t_rotor, heli_t_rotor.index_count);
-            heli_t_rot_node.reference_point= glm::vec3(0.35, 2.3, 10.4);
-            heli_t_rot_node.rotation= glm::vec3(rotation_tail, 0.0, 0.0);
+            // let mut heli_t_rot_node = SceneNode::from_vao(my_heli_t_rotor, heli_t_rotor.index_count);
+            // heli_bod_node.add_child(&heli_t_rot_node);
+            // heli_t_rot_node.reference_point= glm::vec3(0.35, 2.3, 10.4);
+            // heli_t_rot_node.rotation= glm::vec3(rotation_tail, 0.0, 0.0);
             
-            heli_bod_node.add_child(&heli_t_rot_node);
+            // // det over denne skal fungere fra loopen
 
             // heli_bod_node.print();
             // heli_door_node.print();
             // heli_m_rot_node.print();
             // heli_t_rot_node.print();
+            ///////
+            let offset = 0.4;
+            let mut nodes: Vec<scene_graph::Node> = Vec::new();
+            //nodes[0] = scene_node;
+
+            for i in 0..5{
+                let mut heading = toolbox::simple_heading_animation(elapsed + offset * &(i as f32));
+                //heli body
+                nodes.push(SceneNode::from_vao(my_heli_body, heli_body.index_count)); 
+                scene_node.add_child(&nodes[i]);
+                nodes[i].reference_point = vec3(heading.x, 0.0, heading.z);
+                nodes[i].rotation = vec3(heading.roll, heading.yaw, heading.pitch);
+                //Heli door
+                nodes[i].add_child(&SceneNode::from_vao(my_heli_door, heli_door.index_count)); 
+                nodes[i].get_child(0).reference_point = vec3(0.0, 0.0, 0.0);
+                //heli main rotor
+                nodes[i].add_child(&SceneNode::from_vao(my_heli_m_rotor, heli_m_rotor.index_count));
+                nodes[i].get_child(1).reference_point= glm::vec3(0.0, 2.3, 0.0);
+                nodes[i].get_child(1).rotation= glm::vec3(0.0, rotation_main, 0.0);
+                //heli tail rotor
+                nodes[i].add_child(&SceneNode::from_vao(my_heli_t_rotor, heli_t_rotor.index_count));
+                nodes[i].get_child(2).reference_point= glm::vec3(0.35, 2.3, 10.4);
+                nodes[i].get_child(2).rotation= glm::vec3(rotation_tail, 0.0, 0.0);
+
+
+
+
+
+            }
+
+
+            /////
             unsafe{
 
             draw_scene(&root_node,&trans, &glm::Mat4::identity());
